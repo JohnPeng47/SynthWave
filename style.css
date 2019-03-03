@@ -1,0 +1,27 @@
+body {
+    display: flex;
+    justify-content: center;
+}
+
+.piano {
+    display: flex; 
+    flex-direction: row; 
+    height: 140px; 
+    width: 70%;
+}
+.white {
+    display: flex; 
+    height: 100%; 
+    width: 12%; 
+    background-color: white;
+    border:1px solid black; /* by default border-width and border-style set to 0 and none respectively*/
+}
+.black {
+    display: flex; 
+    height: 100%; 
+    width: 12%; 
+    background-color: white;
+    border:1px solid black; /* by default border-width and border-style set to 0 and none respectively*/
+}
+
+

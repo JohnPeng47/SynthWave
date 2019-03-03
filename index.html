@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <script src="node_modules/tone/build/Tone.js"></script>
+        <link rel="stylesheet" type="text/css" href="style.css">
+    </head>
+    <script>          
+        window.onload = function() {
+            console.log("hello")
+            document.querySelector('.start').addEventListener('click', function(){
+                console.log("AudioContext started!!")
+                Tone.start()
+            })
+            var synth = new Tone.Synth().toMaster();
+            //play a middle 'C' for the duration of an 8th note
+
+            document.querySelector(".key").addEventListener("click", function(){
+                synth.triggerAttackRelease("C4", "8n");
+            })
+        }
+    </script>
+    <body>
+        <div class="piano">
+              
+                <!-- why doesn't start expand to parent height? -->
+                <!-- <div class="start" style="display: flex; height: 100%; width: 50%; background-color: red"></div>
+                <div class="key" style="display: flex; height: 100%; width: 50%; background-color: black"></div> -->
+                <div class="white">C</div>
+                <div class="black"></div>
+                <div class="white">D</div>
+                <div class="white">E</div>
+                <div class="white">F</div>
+                <div class="white">G</div>
+                <div class="white">A</div>
+                <div class="white">B</div>
+                <div class="white">C</div>
+        </div>
+
+    </body>
+</html>
