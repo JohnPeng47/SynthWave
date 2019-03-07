@@ -8,7 +8,6 @@ export default class DragCore extends React.Component {
         // fixes this to the DragCore component class
         this.clickHandler = this.clickHandler.bind(this);
         this.resizeHandler = this.resizeHandler.bind(this);
-        this.getRefscb = this.getRefscb.bind(this);
 
         let keysChild = this.props.children.map(child => {
             let keys = {}; //TODO: change this attribute name
@@ -16,7 +15,6 @@ export default class DragCore extends React.Component {
             return keys;
         })
 
-        console.log("keys ", keysChild);
         this.state = {
             children : this.props.children.map(child => child),
             childRefs : new Array(this.props.children.length).map(() => {
@@ -27,35 +25,20 @@ export default class DragCore extends React.Component {
         }
     }
 
-    // callback from children to set the state and key
-    getRefscb(ref, key) {
-        let newRefs = this.state.refs;
-        newRefs[key] = ref;
-        this.setState({ refs: newRefs });
-    }
-
     // checks if click within children's area
     checkIfClickedChild(x, y){
         let clickedChild;
         React.Children.forEach(this.state.children, child => {
-            console.log(this.state.refs)
-            console.log("something", child.props.something)
-            // const childRef = this.state.refs[child.props.something];
-            
             let { x: xChild, y: yChild, width, height } = ReactDOM.findDOMNode(this.state.refs[child.props.something]).getBoundingClientRect();
             
             xChild = this.state.x(xChild);
             yChild = this.state.y(yChild);
-            const xReal = x; 
-            const yReal = y;
-            
-            console.log(xChild, yChild, width, height);
-            console.log("x: ", xReal, "y: ", yReal)
+        
             // TODO: need to handle the case where both elements are overlapped;
             // take the one with the highest Z-score
-            if (xReal >= xChild && xReal <= xChild + width && yReal >= yChild && yReal <= yChild + height) {
-                console.log("clicked :", child.props.children.props.className);
+            if (x >= xChild && x <= xChild + width && y >= yChild && y <= yChild + height) {
                 clickedChild = child;
+                console.log("clicked: ", child.props.children.props.className);
             }
 
         })
@@ -63,22 +46,16 @@ export default class DragCore extends React.Component {
     }
 
     componentDidMount(){
-        this.props.children.forEach(child=>{
-            console.log(child)
-            console.log(child.key)
-        })
         this.realignAxis();
     }
+
     // returns 2 functions that when, given x and y relative to the window object(screen?)
     // will instead return coordinates relative to the top left corner of DragCore container
     // TODO: these values need to change in response to container being resized
     realignAxis(){
-        console.log("called ")
         const element = this.containerRef;
         const { borderTopWidth, borderLeftWidth } = element.style; 
         const { x: x_window, y: y_window } = element.getBoundingClientRect();
-        console.log("x_window: ", x_window, "y_window: ", y_window);
-        console.log(borderTopWidth, borderLeftWidth);
         this.state.x = (x) => x - parseFloat(x_window) - convertPXtoNum(borderLeftWidth);
         this.state.y = (y) => y - parseFloat(y_window) - convertPXtoNum(borderTopWidth);
     }
@@ -88,7 +65,6 @@ export default class DragCore extends React.Component {
     }
     // main event handler class; converts click coordinates and passes the event to other handlers
     clickHandler(event) {
-        console.log("event type: " ,event.type);
         const x = this.state.x(event.clientX);
         const y = this.state.y(event.clientY);
         const child = this.checkIfClickedChild(x, y);
@@ -119,7 +95,7 @@ export default class DragCore extends React.Component {
                     const clone = React.cloneElement(child, {
                         ref : r => this.state.refs[key] = r,
                         something : key,
-                        someotherprop : 3
+                        selfRef : this.state.refs[key]
                     })
                     // need to reassign new ref returned from cloneElement to children
                     this.state.children[i] = clone;
