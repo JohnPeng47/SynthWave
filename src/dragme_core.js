@@ -8,7 +8,9 @@ export default class DragCore extends React.Component {
         // fixes this to the DragCore component class
         this.clickHandler = this.clickHandler.bind(this);
         this.resizeHandler = this.resizeHandler.bind(this);
-
+        this.dragHandler = this.dragHandler.bind(this);
+        this.mouseUpHandler = this.mouseUpHandler.bind(this);
+        
         let keysChild = this.props.children.map(child => {
             let keys = {}; //TODO: change this attribute name
             keys[child.props.something] = child;
@@ -17,9 +19,6 @@ export default class DragCore extends React.Component {
 
         this.state = {
             children : this.props.children.map(child => child),
-            childRefs : new Array(this.props.children.length).map(() => {
-                return React.createRef(); //populate with refs later assigned from child components
-            }),
             currentSelected : null,
             refs : Object.assign({}, ...keysChild)
         }
@@ -29,7 +28,8 @@ export default class DragCore extends React.Component {
     checkIfClickedChild(x, y){
         let clickedChild;
         React.Children.forEach(this.state.children, child => {
-            let { x: xChild, y: yChild, width, height } = ReactDOM.findDOMNode(this.state.refs[child.props.something]).getBoundingClientRect();
+            let childRef = this.state.refs[child.props.something];
+            let { x: xChild, y: yChild, width, height } = ReactDOM.findDOMNode(childRef).getBoundingClientRect();
             
             xChild = this.state.x(xChild);
             yChild = this.state.y(yChild);
@@ -37,8 +37,8 @@ export default class DragCore extends React.Component {
             // TODO: need to handle the case where both elements are overlapped;
             // take the one with the highest Z-score
             if (x >= xChild && x <= xChild + width && y >= yChild && y <= yChild + height) {
-                clickedChild = child;
-                console.log("clicked: ", child.props.children.props.className);
+                clickedChild = childRef;
+                console.log("clicked : ", child.props.children.props.className);
             }
 
         })
@@ -69,6 +69,13 @@ export default class DragCore extends React.Component {
         const y = this.state.y(event.clientY);
         const child = this.checkIfClickedChild(x, y);
 
+        if (child) {
+            console.log("settinc urrent child to", child);
+            this.setState({
+                currentSelected : child
+            });
+            console.log(this.state.currentSelected);
+        }
         return
         // console.log("sucesccfully loaded")
         // const selectme = document.querySelector("#selectMe")
@@ -85,11 +92,30 @@ export default class DragCore extends React.Component {
         // selectme.addEventListener("mousemove", onmousemove); 
     }
 
+    dragHandler(event) {
+        const currChild = this.state.currentSelected;
+        console.log(currChild);
+        if(currChild) {
+            console.log("Im firing");
+            let { x, y } = currChild.getPosition();
+            let deltaX = this.state.x(event.clientX - x);
+            let deltaY = this.state.y(event.clientY - y);
+
+            currChild.translate(deltaX, deltaY);
+        }
+    }
+
+    mouseUpHandler() {
+        console.log("mouseup firing");
+        this.setState({
+            currentSelected : null
+        })
+    }
     // TODO: change React cloneElement
     render(){
         return (
             // ref returns a callback function with the reference to the element as the only parameter
-            <div ref={elRef => this.containerRef = elRef} onMouseDown={this.clickHandler} style={this.props.style}>
+            <div ref={elRef => this.containerRef = elRef} onMouseUp={this.mouseUpHandler} onMouseDown={this.clickHandler} onMouseMove={this.dragHandler} style={this.props.style}>
                 {React.Children.map(this.props.children, (child, i) => {
                     const key = Math.random()*149358;
                     const clone = React.cloneElement(child, {

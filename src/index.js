@@ -32,8 +32,8 @@ const canvasStyle2 = {
     margin: "0 auto",
     "backgroundColor": "blue",
     position : "absolute",
-    top: Math.random()*178,
-    left: Math.random()*179
+    top: 0,
+    left: 0
     // top : (Math.random() + 1) * 100,
     // left : (Math.random() + 1) * 100
 }
@@ -51,11 +51,11 @@ const containerStyle = {
 // entry point for out  application
 ReactDOM.render((
     <DragCore style={containerStyle}>
-        <Draggable>
-            <div style={canvasStyle} className="canvas"></div>
+        <Draggable style={canvasStyle} x={Math.random()*178} y={Math.random()*178}>
+            <div className="canvas"></div>
         </Draggable>
-        <Draggable>
-            <div style={canvasStyle2} className="hello1"></div>
+        <Draggable style={canvasStyle2} x={Math.random()*178} y={Math.random()*178}>
+            <div className="hello1"></div>
         </Draggable>
     </DragCore>
 ), document.getElementById('app'));

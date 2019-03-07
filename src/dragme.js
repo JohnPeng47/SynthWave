@@ -4,33 +4,48 @@ import { render } from 'react-dom';
 export default class Draggable extends React.Component {
     constructor(props) {
         super(props);
-        // call this cb to set the refs back on parent
-        // this.props.setRefs(React.createRef(), this.props.key);
-        this.state = {};
+        this.state = {
+            x : this.props.x,
+            y : this.props.y
+        }
         this._childRef = null;
         console.log("selfRef: ", this.props.selfRef);
     }
-    
+
+    // Design Decision: Encapsulate the movement logic in child so that DragCore can support many
+    // types of children (ie. HTML, SVG elements, WebGL elements, etc.)
     getPosition() {
-        // return {
-        //     x : this._childRef.style
-        // }
+        const { x, y, width, height } = this.state;
+        return {
+            x : x,
+            y : y,
+            width : width,
+            height : height
+        }
     }
-    
+
     // animation callback tied 
-    translateX(x) {
-        
+    translate(x, y) {
+        this.setState({
+            x: this.state.x += x,
+            y: this.state.y += y
+        })
     }
 
     componentDidMount() {
-        console.log(this._childRef)
-        // this._childRef.props.style = {
-        //     "background-colour" : "black"
-        // }
+        const { width, height } = this._childRef.getBoundingClientRect();
+        this.setState({
+            width : width,
+            height : height
+        })
     }
     render() {
+        const transform = {
+            transform : `translateX(${this.state.x}px) translateY(${this.state.y}px)`
+        }
         return React.cloneElement(this.props.children, {
-            ref : eleRef => this._childRef = eleRef
+            ref : eleRef => this._childRef = eleRef,
+            style : Object.assign({}, this.props.style, transform)
         })
     }
 }
