@@ -1,5 +1,6 @@
 module.exports = {
     entry: "./src/index.js",
+    devtool: "eval-source-map",
     module: {
         rules: [
           {
@@ -13,7 +14,7 @@ module.exports = {
         extensions: ['*', '.js', '.jsx']
     },
     output : {
-        path: __dirname + "./dist",
+        path: __dirname + "./dist", //will set this directory as the root
         publicPath: '/',
         filename: 'bundle.js'
     },
