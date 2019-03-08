@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import { convertPXtoNum } from './utils.js';
+import { PhysicsEngine } from './physics';
 
 export default class DragCore extends React.Component {
     constructor(props) {
@@ -26,16 +27,21 @@ export default class DragCore extends React.Component {
             currentSelected : null,
             refs : Object.assign({}, ...keysChild)
         }
+
+        if(this.props.physicsEngine) {
+            this.physicsEngine = new PhysicsEngine();            
+        }
+
         console.log("state children: ", this.state.children);
     }
-    
+
     componentDidCatch(error, info) {
         // You can also log the error to an error reporting service
         console.log("ERRORR: ", error, info);
       }
     
-
-    // checks if click within children's area
+    //TODO: rename
+    // which entity is clicked
     checkIfClickedChild(x, y){
         let clickedChild;
         React.Children.forEach(this.state.children, child => {
@@ -62,46 +68,41 @@ export default class DragCore extends React.Component {
 
     // returns 2 functions that when, given x and y relative to the window object(screen?)
     // will instead return coordinates relative to the top left corner of DragCore container
-    // TODO: these values need to change in response to container being resized
     realignAxis(){
         const element = this.containerRef;
         const { borderTopWidth, borderLeftWidth } = element.style; 
-        const { x: x_window, y: y_window } = element.getBoundingClientRect();
-        this.state.x = (x) => x - parseFloat(x_window) - convertPXtoNum(borderLeftWidth);
-        this.state.y = (y) => y - parseFloat(y_window) - convertPXtoNum(borderTopWidth);
-        console.log(this.state.x)
+        const { x: x_window, y: y_window, width, height } = element.getBoundingClientRect();
+
+        this.setState({
+            // TODO: pass x and y to the child component so that bulk of positional logic is performed there
+            x : x => x - parseFloat(x_window) - convertPXtoNum(borderLeftWidth), 
+            y : y => y - parseFloat(y_window) - convertPXtoNum(borderTopWidth),
+            width : width,
+            height : height
+        })
     }
 
+    // TODO: this.x and this.y need to change in response to container being resized
     resizeHandler(event) {
         this.realignAxis();
     }
+
+    // main event loop
     // main event handler class; converts click coordinates and passes the event to other handlers
     clickHandler(event) {
         const x = this.state.x(event.clientX);
         const y = this.state.y(event.clientY);
         const child = this.checkIfClickedChild(x, y);
 
+        
         if (child) {
-            console.log("settinc urrent child to", child);
+            console.log("settinc current child to", child);
             this.setState({
                 currentSelected : child
             });
             console.log(this.state.currentSelected);
         }
-        return
-        // console.log("sucesccfully loaded")
-        // const selectme = document.querySelector("#selectMe")
-        // function onmouseup() {
-        //     console.log("mouse up");
-        //     selectme.removeEventListener("mouseup", onmouseup);
-        //     selectme.removeEventListener("mousemove", onmousemove);
-        // }
-        // selectme.addEventListener("mouseup", onmouseup); 
-        // function onmousemove(event) {
-        //     console.log("X: ", event.clientX);
-        //     console.log("Y: ", event.clientY);
-        // }
-        // selectme.addEventListener("mousemove", onmousemove); 
+        return;
     }
 
     dragHandler(event) {
@@ -126,17 +127,24 @@ export default class DragCore extends React.Component {
         })
     }
     // TODO: change React cloneElement
-    render(){
+    render(){        
         return (
             // ref returns a callback function with the reference to the element as the only parameter
             <div ref={elRef => this.containerRef = elRef} onMouseUp={this.mouseUpHandler} onMouseDown={this.clickHandler} onMouseMove={this.dragHandler} style={this.props.style}>
                 {this.state.children.map((child, i) => {
-                    console.log("child: ", child);
                     const key = Math.random()*149358;
                     const clone = React.cloneElement(child, {
                         ref : r => this.state.refs[key] = r,
                         something : key,
-                        selfRef : this.state.refs[key]
+                        selfRef : this.state.refs[key],
+                        // Design Decision: originally wanted to delegate physics attribute intialization to child
+                        // components constructor but instead opted to control intialization through the parent
+                        // 1. More control over initialization process
+                        // 2. Adhere to React philosophy of information flowing downward from parent to child
+                        // 3. Decoupling the intialization logic from the class constructor allows better
+                        // code reuse in the future, when other generic components could be imbued with a physics
+                        // attributes
+                        physics : this.physicsEngine.initDefaultConfig()
                     })
                     // need to reassign new ref returned from cloneElement to children
                     console.log("not failing")

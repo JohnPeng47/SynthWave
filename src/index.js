@@ -70,13 +70,16 @@ const Div2 = <div className="hello1"></div>
 const physics = {
     physics : {
         weight : null,
+        x : 0,
+        y : 0,
         vx : 0,
         vy : 0,
         ax : 0,
         ay : 0,
         dx : 0,
         dy : 0,
-        gravity : 1
+        gravity : 1,
+        type : "particle"
     }
 }
 

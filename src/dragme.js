@@ -1,6 +1,5 @@
 import React from 'react';
 import { render } from 'react-dom';
-import { PhysicsEngine } from './physics';
 
 export default class Draggable extends React.Component {
     constructor(props) {
@@ -11,10 +10,6 @@ export default class Draggable extends React.Component {
             height : null, // set after Draggable has been rendered on the DOM
             width : null
         }
-
-        if (this.props.physicsConfig) {
-            this.state.physics = this.activatePhysics();
-        }
         this._childRef = null;
     }
 
@@ -22,7 +17,7 @@ export default class Draggable extends React.Component {
     // types of children (ie. HTML, SVG elements, WebGL elements, etc.)
     getPosition() {
         const { x, y, width, height } = this.state;
-
+        console.log(this.state.physics.getLeft());
         return {
             x : x,
             y : y,
@@ -38,13 +33,10 @@ export default class Draggable extends React.Component {
         })
     }
 
-    activatePhysics() {
-        this.setState(this.props.physicsConfig);
-        this.getLeft = () => this.state.x;
-        this.getRight = () => this.state.x + this.state.width;
-        this.getTop = () => this.state.y + this.state.height;
-
-        return new PhysicsEngine();
+    componentWillReceiveProps(props) {
+        if(props.physics) {
+            this.setState({ physics : props.physics });
+        }
     }
 
     componentDidMount() {
@@ -54,6 +46,7 @@ export default class Draggable extends React.Component {
             height : height
         })
     }
+
     render() {
         const transform = {
             transform : `translateX(${this.state.x}px) translateY(${this.state.y}px)`
