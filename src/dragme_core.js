@@ -10,19 +10,30 @@ export default class DragCore extends React.Component {
         this.resizeHandler = this.resizeHandler.bind(this);
         this.dragHandler = this.dragHandler.bind(this);
         this.mouseUpHandler = this.mouseUpHandler.bind(this);
-        
-        let keysChild = this.props.children.map(child => {
+
+        // create keys mapped to child instances; these are later used to get refs from the 
+        // children elements
+        let keysChild = this.props.children instanceof Array ? this.props.children.map(child => {
             let keys = {}; //TODO: change this attribute name
             keys[child.props.something] = child;
             return keys;
-        })
-
+        }) : {
+            [this.children.props.something] : this.props.children
+        }
+    
         this.state = {
-            children : this.props.children.map(child => child),
+            children : Object.assign([], this.props.children), // need a mutable version of children
             currentSelected : null,
             refs : Object.assign({}, ...keysChild)
         }
+        console.log("state children: ", this.state.children);
     }
+    
+    componentDidCatch(error, info) {
+        // You can also log the error to an error reporting service
+        console.log("ERRORR: ", error, info);
+      }
+    
 
     // checks if click within children's area
     checkIfClickedChild(x, y){
@@ -38,7 +49,7 @@ export default class DragCore extends React.Component {
             // take the one with the highest Z-score
             if (x >= xChild && x <= xChild + width && y >= yChild && y <= yChild + height) {
                 clickedChild = childRef;
-                console.log("clicked : ", child.props.children.props.className);
+                console.log("clicked : ", child);
             }
 
         })
@@ -58,6 +69,7 @@ export default class DragCore extends React.Component {
         const { x: x_window, y: y_window } = element.getBoundingClientRect();
         this.state.x = (x) => x - parseFloat(x_window) - convertPXtoNum(borderLeftWidth);
         this.state.y = (y) => y - parseFloat(y_window) - convertPXtoNum(borderTopWidth);
+        console.log(this.state.x)
     }
 
     resizeHandler(event) {
@@ -96,10 +108,12 @@ export default class DragCore extends React.Component {
         const currChild = this.state.currentSelected;
         console.log(currChild);
         if(currChild) {
-            console.log("Im firing");
             let { x, y } = currChild.getPosition();
             let deltaX = this.state.x(event.clientX - x);
             let deltaY = this.state.y(event.clientY - y);
+            console.log(event.clientX, event.clientY, x, y)
+            console.log(deltaX, deltaY);
+
 
             currChild.translate(deltaX, deltaY);
         }
@@ -116,7 +130,8 @@ export default class DragCore extends React.Component {
         return (
             // ref returns a callback function with the reference to the element as the only parameter
             <div ref={elRef => this.containerRef = elRef} onMouseUp={this.mouseUpHandler} onMouseDown={this.clickHandler} onMouseMove={this.dragHandler} style={this.props.style}>
-                {React.Children.map(this.props.children, (child, i) => {
+                {this.state.children.map((child, i) => {
+                    console.log("child: ", child);
                     const key = Math.random()*149358;
                     const clone = React.cloneElement(child, {
                         ref : r => this.state.refs[key] = r,
@@ -124,6 +139,7 @@ export default class DragCore extends React.Component {
                         selfRef : this.state.refs[key]
                     })
                     // need to reassign new ref returned from cloneElement to children
+                    console.log("not failing")
                     this.state.children[i] = clone;
                     return clone;
                 })}

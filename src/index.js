@@ -5,6 +5,8 @@ import ReactDOM from 'react-dom';
 import DragCore from './dragme_core.js'
 import Draggable from './dragme.js';
 
+import { CreateDraggable, CreateEntity } from './physics.js'
+
 // get styled-components working
 // const canvas = styled.div`
 //     height: 500px;
@@ -25,7 +27,6 @@ const canvasStyle = {
     // top : (Math.random() + 1) * 100,
     // left : (Math.random() + 1) * 100
 }
-
 const canvasStyle2 = {
     height: "40px",
     width: "40px",
@@ -48,13 +49,43 @@ const containerStyle = {
     marginTop: "15px 15px"
 }
 
-// entry point for out  application
+const dragConfig = {
+    x : Math.random()*178,
+    y : Math.random()*178,
+    style : canvasStyle
+}
+
+const Comp = () => {
+    return <div style={{ color: 'black'}} class="hello1"></div>
+}
+
+class testComp extends React.Component {
+    render() {
+        return <div>Helloworld</div>
+    }
+}
+const draconfig2 = Object.assign(dragConfig, { style : canvasStyle2 });
+const Div1 = <div className="canvas"></div>
+const Div2 = <div className="hello1"></div>
+const physics = {
+    physics : {
+        weight : null,
+        vx : 0,
+        vy : 0,
+        ax : 0,
+        ay : 0,
+        dx : 0,
+        dy : 0,
+        gravity : 1
+    }
+}
+
 ReactDOM.render((
     <DragCore style={containerStyle}>
         <Draggable style={canvasStyle} x={Math.random()*178} y={Math.random()*178}>
             <div className="canvas"></div>
         </Draggable>
-        <Draggable style={canvasStyle2} x={Math.random()*178} y={Math.random()*178}>
+        <Draggable physicsConfig={physics} style={canvasStyle2} x={Math.random()*178} y={Math.random()*178}>
             <div className="hello1"></div>
         </Draggable>
     </DragCore>
