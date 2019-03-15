@@ -84,7 +84,7 @@ const physics = {
 }
 
 ReactDOM.render((
-    <DragCore style={containerStyle}>
+    <DragCore physicsEngine={true} style={containerStyle}>
         <Draggable style={canvasStyle} x={Math.random()*178} y={Math.random()*178}>
             <div className="canvas"></div>
         </Draggable>

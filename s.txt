@@ -1,0 +1,13 @@
+var b = "hello";
+var a = () => { console.log(this) }
+a(); // logs Window 
+a.bind(b)(); // still logs window
+
+var a = function(){
+	console.log(this);
+}
+a(); // logs window
+a.bind(b); // logs "hello"
+
+// Conclusion:
+// cannot bind this to anonymous function

@@ -1,7 +1,8 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import { convertPXtoNum } from './utils.js';
+import { convertPXtoNum, isReactComponent } from './utils.js';
 import { PhysicsEngine } from './physics';
+import { timingSafeEqual } from 'crypto';
 
 export default class DragCore extends React.Component {
     constructor(props) {
@@ -12,8 +13,7 @@ export default class DragCore extends React.Component {
         this.dragHandler = this.dragHandler.bind(this);
         this.mouseUpHandler = this.mouseUpHandler.bind(this);
 
-        // create keys mapped to child instances; these are later used to get refs from the 
-        // children elements
+        // create keys mapped to child instances; these are later used to get refs from the child components
         let keysChild = this.props.children instanceof Array ? this.props.children.map(child => {
             let keys = {}; //TODO: change this attribute name
             keys[child.props.something] = child;
@@ -28,6 +28,7 @@ export default class DragCore extends React.Component {
             refs : Object.assign({}, ...keysChild)
         }
 
+        // initialize physics engine
         if(this.props.physicsEngine) {
             this.physicsEngine = new PhysicsEngine();            
         }
@@ -35,11 +36,34 @@ export default class DragCore extends React.Component {
         console.log("state children: ", this.state.children);
     }
 
+    // updates the dimensions of container
+    updateDimensions() {        
+        // intialize self reference for DOM manipulations
+        // can only get node after component mounted
+        if (!this.selfRef) {
+            this.selfRef = ReactDOM.findDOMNode(this);
+        }
+
+        const {x, y, width, height} = this.selfRef.getBoundingClientRect();
+
+        this.setState({
+            x : x,
+            y : y,
+            width : width,
+            height : height
+        });
+    }
+
     componentDidCatch(error, info) {
         // You can also log the error to an error reporting service
         console.log("ERRORR: ", error, info);
       }
     
+    componentDidMount(){
+        this.realignAxis();
+        this.updateDimensions(); // gets rendered width and height from the DOM
+    }
+
     //TODO: rename
     // which entity is clicked
     checkIfClickedChild(x, y){
@@ -62,36 +86,66 @@ export default class DragCore extends React.Component {
         return clickedChild;
     }
 
-    componentDidMount(){
-        this.realignAxis();
-    }
-
-    // returns 2 functions that when, given x and y relative to the window object(screen?)
-    // will instead return coordinates relative to the top left corner of DragCore container
+    
+    // this function because we use getBoundingClient to determine position of components
+    // rendered on the DOM, which gives coordinates based on (0,0) at the top left corner of the
+    // window. We need to relaign the x-y coordinates based on where the DragCore container was renderd
     realignAxis(){
+        console.log("hellllooooo")
         const element = this.containerRef;
         const { borderTopWidth, borderLeftWidth } = element.style; 
         const { x: x_window, y: y_window, width, height } = element.getBoundingClientRect();
-
+        const alignX = function(x) {
+            return x - parseFloat(x_window) - convertPXtoNum(borderLeftWidth);
+        }
+        const alignY = function(y) {
+            return y - parseFloat(y_window) - convertPXtoNum(borderTopWidth);
+        }
+        
         this.setState({
             // TODO: pass x and y to the child component so that bulk of positional logic is performed there
-            x : x => x - parseFloat(x_window) - convertPXtoNum(borderLeftWidth), 
-            y : y => y - parseFloat(y_window) - convertPXtoNum(borderTopWidth),
+            alignX : alignX, 
+            alignY : alignY,
             width : width,
             height : height
-        })
+        })        
     }
 
     // TODO: this.x and this.y need to change in response to container being resized
     resizeHandler(event) {
         this.realignAxis();
+        this.updateDimensions();
     }
 
     // main event loop
     // main event handler class; converts click coordinates and passes the event to other handlers
     clickHandler(event) {
-        const x = this.state.x(event.clientX);
-        const y = this.state.y(event.clientY);
+        const collisions = [];
+        const x = this.state.alignX(event.clientX);
+        const y = this.state.alignY(event.clientY);
+        const length = this.state.children.length;
+
+        // check element collisions with borders
+        /*
+         *     1   2   3   4
+         * 1  [x] [x] [x] [x]
+         * 2  [ ] [x] [x] [x]
+         * 3  [ ] [ ] [x] [x]
+         * 4  [ ] [ ] [ ] [x]
+         * 
+         */
+
+        for(let i = 0; i < length; i++) {
+            let collide = this.physicsEngine.checkCollisionWithBorders(this.state.children[i]);
+            if(collide) {
+                collisions.push({
+                    child: this.state.children[i]
+                    // some other shit
+                })
+            }
+
+        }
+        
         const child = this.checkIfClickedChild(x, y);
 
         
@@ -108,16 +162,18 @@ export default class DragCore extends React.Component {
     dragHandler(event) {
         const currChild = this.state.currentSelected;
         console.log(currChild);
-        if(currChild) {
-            let { x, y } = currChild.getPosition();
-            let deltaX = this.state.x(event.clientX - x);
-            let deltaY = this.state.y(event.clientY - y);
-            console.log(event.clientX, event.clientY, x, y)
-            console.log(deltaX, deltaY);
-
-
-            currChild.translate(deltaX, deltaY);
+        if(!currChild) {
+            return;
         }
+
+        let { x, y } = currChild.getPosition();
+        let deltaX = this.state.alignX(event.clientX - x);
+        let deltaY = this.state.alignY(event.clientY - y);
+
+        currChild.queueTransform({
+            x : x + deltaX,
+            y : y + deltaY
+        });
     }
 
     mouseUpHandler() {
@@ -134,7 +190,7 @@ export default class DragCore extends React.Component {
                 {this.state.children.map((child, i) => {
                     const key = Math.random()*149358;
                     const clone = React.cloneElement(child, {
-                        ref : r => this.state.refs[key] = r,
+                        ref : r => this.state.refs[key] = r, // refs 
                         something : key,
                         selfRef : this.state.refs[key],
                         // Design Decision: originally wanted to delegate physics attribute intialization to child
@@ -147,7 +203,6 @@ export default class DragCore extends React.Component {
                         physics : this.physicsEngine.initDefaultConfig()
                     })
                     // need to reassign new ref returned from cloneElement to children
-                    console.log("not failing")
                     this.state.children[i] = clone;
                     return clone;
                 })}
